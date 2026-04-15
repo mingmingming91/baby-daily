@@ -11,9 +11,8 @@
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
         input[type=range]::-webkit-slider-thumb { border-radius: 50%; background: #3b82f6; cursor: pointer; height: 1.5rem; width: 1.5rem; appearance: none; border: 3px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-        .dark input[type="date"]::-webkit-calendar-picker-indicator,
-        .dark input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; }
-        .input-box { @apply w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer appearance-none; }
+        /* 讓原生圖示在深色模式下稍微變白 */
+        .dark input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; }
     </style>
 </head>
 <script>document.documentElement.classList.add('dark');</script>
@@ -23,7 +22,7 @@
         
         <header class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold text-blue-600 dark:text-blue-400">👶 Baby Daily</h1>
-            <button @click="toggleDark" class="p-2 bg-gray-200 dark:bg-gray-700 rounded-full text-lg">
+            <button @click="toggleDark" class="p-2 bg-gray-200 dark:bg-gray-700 rounded-full">
                 {{ isDark ? '🌙' : '☀️' }}
             </button>
         </header>
@@ -53,7 +52,7 @@
                             <td class="px-4 py-3 text-[10px] text-gray-400 w-16 align-top pt-4">{{ formatTime(log.time || log.start) }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex flex-col">
-                                    <span class="font-bold text-[10px] uppercase tracking-tighter" :class="log.logType==='飲奶'?'text-blue-500':log.logType==='換片'?'text-yellow-500':'text-purple-500'">{{ log.logType }}</span>
+                                    <span class="font-bold text-[10px] uppercase" :class="log.logType==='飲奶'?'text-blue-500':log.logType==='換片'?'text-yellow-500':'text-purple-500'">{{ log.logType }}</span>
                                     <span class="text-sm font-medium">
                                         <template v-if="log.logType==='飲奶'">{{ log.amount }}ml <span class="text-gray-400 text-xs">({{ log.type }})</span></template>
                                         <template v-else-if="log.logType==='換片'">{{ log.type }} <span class="ml-1 opacity-60">{{ "➕".repeat(log.level) }}</span></template>
@@ -78,13 +77,13 @@
                 <div class="flex justify-between mb-4 items-center">
                     <span class="font-bold text-blue-600 dark:text-blue-400">🍼 飲奶 <span class="ml-1 text-xl">{{ fAmount }}</span><span class="text-xs ml-0.5">ml</span></span>
                     <div class="flex bg-white dark:bg-gray-800 rounded-lg p-1 text-[10px] shadow-sm">
-                        <button v-for="t in ['奶粉','人奶']" @click="fType=t" :class="fType===t?'bg-blue-500 text-white shadow':''" class="px-3 py-1 rounded-md transition">{{t}}</button>
+                        <button v-for="t in ['奶粉','人奶']" @click="fType=t" :class="fType===t?'bg-blue-500 text-white shadow':''" class="px-3 py-1 rounded-md transition ml-1">{{t}}</button>
                     </div>
                 </div>
                 
                 <div class="flex gap-2 mb-4">
-                    <input type="date" v-model="fDateOnly" class="flex-[2] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none cursor-pointer">
-                    <input type="time" v-model="fTimeOnly" class="flex-[1] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none cursor-pointer">
+                    <input type="date" v-model="fDateOnly" class="flex-[2] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none">
+                    <input type="time" v-model="fTimeOnly" class="flex-[1] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none">
                 </div>
 
                 <input type="range" v-model="fAmount" min="0" max="300" step="5" class="w-full h-1.5 bg-blue-200 dark:bg-gray-700 rounded-lg appearance-none mb-6">
@@ -95,13 +94,13 @@
                 <div class="flex justify-between items-center mb-4">
                     <span class="font-bold text-yellow-600">🧷 換片 <span class="ml-1">{{ dType }}</span></span>
                     <div class="flex bg-white dark:bg-gray-800 rounded-lg p-1 text-[10px] shadow-sm">
-                        <button v-for="t in ['小便','大便']" @click="dType=t" :class="dType===t?'bg-yellow-600 text-white shadow':''" class="px-3 py-1 rounded-md transition">{{t}}</button>
+                        <button v-for="t in ['小便','大便']" @click="dType=t" :class="dType===t?'bg-yellow-600 text-white shadow':''" class="px-3 py-1 rounded-md transition ml-1">{{t}}</button>
                     </div>
                 </div>
 
                 <div class="flex gap-2 mb-4">
-                    <input type="date" v-model="dDateOnly" class="flex-[2] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none cursor-pointer">
-                    <input type="time" v-model="dTimeOnly" class="flex-[1] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none cursor-pointer">
+                    <input type="date" v-model="dDateOnly" class="flex-[2] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none">
+                    <input type="time" v-model="dTimeOnly" class="flex-[1] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none">
                 </div>
 
                 <div class="flex justify-between mb-6 px-4">
@@ -110,10 +109,8 @@
                 <button @click="saveDiaper" class="w-full bg-yellow-600 text-white py-3.5 rounded-xl font-bold transition active:scale-95 shadow-lg shadow-yellow-500/20">記錄換片 ({{dLevel}}+)</button>
             </div>
 
-            <div class="grid grid-cols-1 gap-4">
-                <button v-if="!isSleeping" @click="startSleep" class="w-full bg-purple-600 text-white py-4 rounded-xl font-bold text-lg transition active:scale-95 shadow-lg shadow-purple-500/20">🌙 開始睡眠</button>
-                <button v-else @click="endSleep" class="w-full bg-red-500 text-white py-4 rounded-xl font-bold text-lg animate-pulse shadow-lg shadow-red-500/20">💤 睡眠中 (點擊結束)</button>
-            </div>
+            <button v-if="!isSleeping" @click="startSleep" class="w-full bg-purple-600 text-white py-4 rounded-xl font-bold text-lg transition active:scale-95 shadow-lg shadow-purple-500/20">🌙 開始睡眠</button>
+            <button v-else @click="endSleep" class="w-full bg-red-500 text-white py-4 rounded-xl font-bold text-lg animate-pulse shadow-lg shadow-red-500/20">💤 睡眠中 (結束)</button>
         </div>
     </div>
 
@@ -141,14 +138,19 @@
                 const now = ref(new Date()), currentDate = ref(new Date());
                 const fType = ref('奶粉'), fAmount = ref(150), dType = ref('小便'), dLevel = ref(1);
                 
-                // 分開日期與時間的 Ref
-                const getTodayDate = () => new Date().toISOString().split('T')[0];
-                const getNowTime = () => new Date().toTimeString().slice(0, 5);
+                // 時間初始化函數
+                const getISOData = () => {
+                    const d = new Date();
+                    return {
+                        date: d.toISOString().split('T')[0],
+                        time: d.toTimeString().slice(0, 5)
+                    };
+                };
 
-                const fDateOnly = ref(getTodayDate());
-                const fTimeOnly = ref(getNowTime());
-                const dDateOnly = ref(getTodayDate());
-                const dTimeOnly = ref(getNowTime());
+                const fDateOnly = ref(getISOData().date);
+                const fTimeOnly = ref(getISOData().time);
+                const dDateOnly = ref(getISOData().date);
+                const dTimeOnly = ref(getISOData().time);
 
                 onMounted(() => {
                     setInterval(() => { now.value = new Date(); }, 30000);
@@ -166,10 +168,7 @@
                     });
                 });
 
-                const combineToTimestamp = (dateStr, timeStr) => {
-                    return Timestamp.fromDate(new Date(`${dateStr}T${timeStr}`));
-                };
-
+                const combineToTS = (d, t) => Timestamp.fromDate(new Date(`${d}T${t}`));
                 const getDiffMinutes = (s, e) => s && e ? Math.floor(((e.toDate?.() || e) - (s.toDate?.() || s)) / 60000) : 0;
 
                 return {
@@ -188,18 +187,17 @@
                     todaySleepMinutes: computed(() => sleeps.value.filter(s => s.start?.toDate?.().toDateString() === new Date().toDateString() && s.end).reduce((sum, s) => sum + getDiffMinutes(s.start, s.end), 0)),
                     changeDate: (n) => { const d = new Date(currentDate.value); d.setDate(d.getDate() + n); if (d <= new Date()) currentDate.value = d; },
                     saveFeed: async () => { 
-                        await addDoc(collection(db, "feeds"), { time: combineToTimestamp(fDateOnly.value, fTimeOnly.value), amount: Number(fAmount.value), type: fType.value }); 
-                        fTimeOnly.value = getNowTime(); 
+                        await addDoc(collection(db, "feeds"), { time: combineToTS(fDateOnly.value, fTimeOnly.value), amount: Number(fAmount.value), type: fType.value }); 
+                        fTimeOnly.value = new Date().toTimeString().slice(0, 5); 
                     },
                     saveDiaper: async () => { 
-                        await addDoc(collection(db, "diapers"), { time: combineToTimestamp(dDateOnly.value, dTimeOnly.value), type: dType.value, level: dLevel.value }); 
-                        dTimeOnly.value = getNowTime(); 
+                        await addDoc(collection(db, "diapers"), { time: combineToTS(dDateOnly.value, dTimeOnly.value), type: dType.value, level: dLevel.value }); 
+                        dTimeOnly.value = new Date().toTimeString().slice(0, 5); 
                     },
                     startSleep: async () => { await addDoc(collection(db, "sleeps"), { start: new Date(), end: null }); },
                     endSleep: async () => { if (sleepDocId.value) { await updateDoc(doc(db, "sleeps", sleepDocId.value), { end: new Date() }); } },
                     deleteItem: async (i) => { if (confirm(`刪除此記錄？`)) await deleteDoc(doc(db, i.dbCol, i.id)); },
                     formatTime: (ts) => ts ? ts.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false}) : '--:--',
-                    timeAgo: (ts) => { if(!ts) return ''; const diff = Math.floor((new Date() - ts.toDate()) / 60000); return diff < 1 ? '剛剛' : diff >= 60 ? Math.floor(diff/60)+'h前' : diff+'m前'; },
                     getDiffMinutes, formatDuration: (m) => `${Math.floor(m/60)}h ${m%60}m`,
                     toggleDark: () => { isDark.value = !isDark.value; document.documentElement.classList.toggle('dark'); }
                 }
