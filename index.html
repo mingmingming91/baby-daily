@@ -10,7 +10,7 @@
     <meta name="theme-color" content="#111827">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1611/1611179.png">
     
-    <link rel="manifest" href='data:application/manifest+json,{"name":"Baby Daily","short_name":"BabyDaily","display":"standalone","start_url":"index.html","background_color":"#111827","theme_color":"#3b82f6","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/1611/1611179.png","sizes":"512x512","type":"image/png"}]}'>
+    <link rel="manifest" href="manifest.json">
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -20,7 +20,6 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
         input[type=range]::-webkit-slider-thumb { border-radius: 50%; background: #3b82f6; cursor: pointer; height: 1.5rem; width: 1.5rem; appearance: none; border: 3px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
         .dark input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; }
-        /* 避免 iOS 輸入框縮放 */
         input[type="date"], input[type="time"] { font-size: 16px; }
     </style>
 </head>
@@ -163,9 +162,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // 啟動離線持久化 (讓 PWA 更有感)
-        enableIndexedDbPersistence(db).catch(err => console.error("Persistence failed", err));
+        enableIndexedDbPersistence(db).catch(() => {});
 
         const { createApp, ref, onMounted, computed } = Vue;
 
@@ -194,6 +191,11 @@
                         const active = all.find(sl => !sl.end);
                         if (active) { isSleeping.value = true; sleepDocId.value = active.id; } else { isSleeping.value = false; }
                     });
+
+                    // 註冊 Service Worker (指向獨立 sw.js)
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.register('sw.js').catch(() => {});
+                    }
                 });
 
                 const combineToTS = (d, t) => Timestamp.fromDate(new Date(`${d}T${t}`));
@@ -208,8 +210,7 @@
                     todayMilk: computed(() => feeds.value.filter(f => f.time?.toDate?.().toDateString() === new Date().toDateString()).reduce((sum, f) => sum + f.amount, 0)),
                     yesterdayMilk: computed(() => {
                         const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-                        const ys = yesterday.toDateString();
-                        return feeds.value.filter(f => f.time?.toDate?.().toDateString() === ys).reduce((sum, f) => sum + f.amount, 0);
+                        return feeds.value.filter(f => f.time?.toDate?.().toDateString() === yesterday.toDateString()).reduce((sum, f) => sum + f.amount, 0);
                     }),
                     todaySleepMinutes: computed(() => sleeps.value.filter(s => s.start?.toDate?.().toDateString() === new Date().toDateString() && s.end).reduce((sum, s) => sum + getDiffMinutes(s.start, s.end), 0)),
                     filteredLogs: computed(() => {
@@ -238,23 +239,6 @@
                 }
             }
         }).mount('#app');
-
-        // PWA Service Worker 註冊
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                const swCode = `
-                    const CACHE_NAME = 'baby-daily-v2';
-                    self.addEventListener('install', e => {
-                        e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['index.html'])));
-                    });
-                    self.addEventListener('fetch', e => {
-                        e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
-                    });
-                `;
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                navigator.serviceWorker.register(URL.createObjectURL(blob));
-            });
-        }
     </script>
 </body>
 </html>
