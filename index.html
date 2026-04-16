@@ -88,11 +88,12 @@
                             <td class="px-4 py-3 text-[10px] text-gray-400 w-16 align-top pt-4">{{ formatTime(log.time || log.start) }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex flex-col">
-                                    <span class="font-bold text-[11px]" :class="log.logType==='飲奶'?'text-blue-500':log.logType==='換片'?'text-yellow-500':'text-purple-500'">{{ log.logType }}</span>
+                                    <span class="font-bold text-[11px]" :class="log.logType==='飲奶'?'text-blue-500':log.logType==='換片'?'text-yellow-500':log.logType==='睡眠'?'text-purple-500':'text-emerald-500'">{{ log.logType }}</span>
                                     <span class="text-sm mt-0.5">
                                         <template v-if="log.logType==='飲奶'">{{ log.amount }}ml <span class="text-gray-400 text-xs">({{ log.type }})</span></template>
                                         <template v-else-if="log.logType==='換片'">{{ log.type }} <span class="ml-1 opacity-60">{{ "➕".repeat(log.level) }}</span></template>
                                         <template v-else-if="log.logType==='睡眠'">{{ formatDuration(getDiffMinutes(log.start, log.end || now)) }}</template>
+                                        <template v-else-if="log.logType==='其他'">{{ log.note }}</template>
                                     </span>
                                 </div>
                             </td>
@@ -108,6 +109,10 @@
         </div>
 
         <div v-if="isToday" class="space-y-6">
+            
+            <button v-if="!isSleeping" @click="startSleep" class="w-full bg-purple-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-purple-500/20 active:scale-95 transition">🌙 開始睡眠</button>
+            <button v-else @click="endSleep" class="w-full bg-red-500 text-white py-4 rounded-xl font-bold text-lg animate-pulse shadow-lg shadow-red-500/20 transition">💤 睡眠中 (結束)</button>
+
             <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-100 dark:border-blue-800">
                 <div class="flex justify-between mb-4 items-center">
                     <span class="font-bold">🍼 飲奶 <span class="text-blue-500 ml-1">{{ fAmount }}ml</span></span>
@@ -142,8 +147,18 @@
                 <button @click="saveDiaper" class="w-full bg-yellow-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-yellow-500/20 active:scale-95 transition">記錄換片 ({{dLevel}}+)</button>
             </div>
 
-            <button v-if="!isSleeping" @click="startSleep" class="w-full bg-purple-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-purple-500/20 active:scale-95 transition">🌙 開始睡眠</button>
-            <button v-else @click="endSleep" class="w-full bg-red-500 text-white py-4 rounded-xl font-bold text-lg animate-pulse shadow-lg shadow-red-500/20 transition">💤 睡眠中 (結束)</button>
+            <div class="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-800">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="font-bold">📝 其他</span>
+                </div>
+                <div class="flex gap-2 mb-4">
+                    <input type="date" v-model="oDateOnly" class="flex-[2] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none">
+                    <input type="time" v-model="oTimeOnly" class="flex-[1] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none">
+                </div>
+                <input type="text" v-model="oNote" placeholder="輸入備註事項..." class="w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none mb-4">
+                <button @click="saveOther" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition">記錄其他</button>
+            </div>
+
         </div>
     </div>
 
@@ -168,10 +183,10 @@
 
         createApp({
             setup() {
-                const isDark = ref(true), feeds = ref([]), diapers = ref([]), sleeps = ref([]);
+                const isDark = ref(true), feeds = ref([]), diapers = ref([]), sleeps = ref([]), others = ref([]);
                 const isSleeping = ref(false), sleepDocId = ref(null);
                 const now = ref(new Date()), currentDate = ref(new Date());
-                const fType = ref('奶粉'), fAmount = ref(150), dType = ref('小便'), dLevel = ref(1);
+                const fType = ref('奶粉'), fAmount = ref(150), dType = ref('小便'), dLevel = ref(1), oNote = ref('');
                 
                 const getNowStrings = () => ({
                     date: new Date().toISOString().split('T')[0],
@@ -180,11 +195,13 @@
 
                 const fDateOnly = ref(getNowStrings().date), fTimeOnly = ref(getNowStrings().time);
                 const dDateOnly = ref(getNowStrings().date), dTimeOnly = ref(getNowStrings().time);
+                const oDateOnly = ref(getNowStrings().date), oTimeOnly = ref(getNowStrings().time);
 
                 onMounted(() => {
                     setInterval(() => { now.value = new Date(); }, 30000);
                     onSnapshot(query(collection(db, "feeds"), orderBy("time", "desc")), s => feeds.value = s.docs.map(d => ({id: d.id, logType: '飲奶', dbCol: 'feeds', ...d.data()})));
                     onSnapshot(query(collection(db, "diapers"), orderBy("time", "desc")), s => diapers.value = s.docs.map(d => ({id: d.id, logType: '換片', dbCol: 'diapers', ...d.data()})));
+                    onSnapshot(query(collection(db, "others"), orderBy("time", "desc")), s => others.value = s.docs.map(d => ({id: d.id, logType: '其他', dbCol: 'others', ...d.data()})));
                     onSnapshot(query(collection(db, "sleeps"), orderBy("start", "desc")), s => {
                         const all = s.docs.map(d => ({id: d.id, logType: '睡眠', dbCol: 'sleeps', ...d.data()}));
                         sleeps.value = all;
@@ -192,7 +209,6 @@
                         if (active) { isSleeping.value = true; sleepDocId.value = active.id; } else { isSleeping.value = false; }
                     });
 
-                    // 註冊 Service Worker (指向獨立 sw.js)
                     if ('serviceWorker' in navigator) {
                         navigator.serviceWorker.register('sw.js').catch(() => {});
                     }
@@ -202,8 +218,8 @@
                 const getDiffMinutes = (s, e) => s && e ? Math.floor(((e.toDate?.() || e) - (s.toDate?.() || s)) / 60000) : 0;
 
                 return {
-                    isDark, feeds, diapers, sleeps, isSleeping, now, currentDate, fType, fAmount, dType, dLevel,
-                    fDateOnly, fTimeOnly, dDateOnly, dTimeOnly,
+                    isDark, feeds, diapers, sleeps, others, isSleeping, now, currentDate, fType, fAmount, dType, dLevel, oNote,
+                    fDateOnly, fTimeOnly, dDateOnly, dTimeOnly, oDateOnly, oTimeOnly,
                     isToday: computed(() => currentDate.value.toDateString() === new Date().toDateString()),
                     viewDateDisplay: computed(() => currentDate.value.toLocaleDateString('zh-HK', {month: 'short', day: 'numeric', weekday: 'short'})),
                     activeSleepStart: computed(() => sleeps.value.find(s => !s.end)?.start),
@@ -215,7 +231,7 @@
                     todaySleepMinutes: computed(() => sleeps.value.filter(s => s.start?.toDate?.().toDateString() === new Date().toDateString() && s.end).reduce((sum, s) => sum + getDiffMinutes(s.start, s.end), 0)),
                     filteredLogs: computed(() => {
                         const ds = currentDate.value.toDateString();
-                        return [...feeds.value, ...diapers.value, ...sleeps.value].filter(i => {
+                        return [...feeds.value, ...diapers.value, ...sleeps.value, ...others.value].filter(i => {
                             const d = (i.time || i.start)?.toDate?.() || (i.time || i.start);
                             return d && new Date(d).toDateString() === ds;
                         }).sort((a, b) => (b.time || b.start).toDate?.() - (a.time || a.start).toDate?.());
@@ -228,6 +244,12 @@
                     saveDiaper: async () => { 
                         await addDoc(collection(db, "diapers"), { time: combineToTS(dDateOnly.value, dTimeOnly.value), type: dType.value, level: dLevel.value }); 
                         dTimeOnly.value = new Date().toTimeString().slice(0, 5); 
+                    },
+                    saveOther: async () => { 
+                        if (!oNote.value.trim()) return;
+                        await addDoc(collection(db, "others"), { time: combineToTS(oDateOnly.value, oTimeOnly.value), note: oNote.value }); 
+                        oNote.value = '';
+                        oTimeOnly.value = new Date().toTimeString().slice(0, 5); 
                     },
                     startSleep: async () => { await addDoc(collection(db, "sleeps"), { start: new Date(), end: null }); },
                     endSleep: async () => { if (sleepDocId.value) await updateDoc(doc(db, "sleeps", sleepDocId.value), { end: new Date() }); },
