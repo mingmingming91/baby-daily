@@ -88,7 +88,7 @@
                             <td class="px-4 py-3 text-[10px] text-gray-400 w-16 align-top pt-4">{{ formatTime(log.time || log.start) }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex flex-col">
-                                    <span class="font-bold text-[11px]" :class="log.logType==='飲奶'?'text-blue-500':log.logType==='換片'?'text-yellow-500':log.logType==='睡眠'?'text-purple-500':'text-emerald-500'">{{ log.logType }}</span>
+                                    <span class="font-bold text-[11px]" :class="log.logType==='飲奶'?'text-blue-500':log.logType==='換片'?'text-yellow-500':log.logType==='睡眠'?'text-purple-500':'text-gray-400'">{{ log.logType }}</span>
                                     <span class="text-sm mt-0.5">
                                         <template v-if="log.logType==='飲奶'">{{ log.amount }}ml <span class="text-gray-400 text-xs">({{ log.type }})</span></template>
                                         <template v-else-if="log.logType==='換片'">{{ log.type }} <span class="ml-1 opacity-60">{{ "➕".repeat(log.level) }}</span></template>
@@ -109,9 +109,11 @@
         </div>
 
         <div v-if="isToday" class="space-y-6">
-            
-            <button v-if="!isSleeping" @click="startSleep" class="w-full bg-purple-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-purple-500/20 active:scale-95 transition">🌙 開始睡眠</button>
-            <button v-else @click="endSleep" class="w-full bg-red-500 text-white py-4 rounded-xl font-bold text-lg animate-pulse shadow-lg shadow-red-500/20 transition">💤 睡眠中 (結束)</button>
+
+            <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                <button v-if="!isSleeping" @click="startSleep" class="w-full bg-purple-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-purple-500/20 active:scale-95 transition">🌙 開始計時睡眠</button>
+                <button v-else @click="endSleep" class="w-full bg-red-500 text-white py-4 rounded-xl font-bold text-lg animate-pulse shadow-lg shadow-red-500/20 transition">💤 計時中 (按此結束)</button>
+            </div>
 
             <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-100 dark:border-blue-800">
                 <div class="flex justify-between mb-4 items-center">
@@ -147,16 +149,33 @@
                 <button @click="saveDiaper" class="w-full bg-yellow-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-yellow-500/20 active:scale-95 transition">記錄換片 ({{dLevel}}+)</button>
             </div>
 
-            <div class="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-800">
+            <div class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-2xl border border-purple-100 dark:border-purple-800">
                 <div class="flex justify-between items-center mb-4">
-                    <span class="font-bold">📝 其他</span>
+                    <span class="font-bold">🌙 睡眠 <span class="text-purple-600 ml-1">{{ manualDurationDisplay }}</span></span>
+                </div>
+                <div class="flex gap-2 mb-2">
+                    <input type="date" v-model="sStartDateOnly" class="flex-[2] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none">
+                    <input type="time" v-model="sStartTimeOnly" class="flex-[1] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none">
+                </div>
+                <div class="flex gap-2 mb-6">
+                    <input type="date" v-model="sEndDateOnly" class="flex-[2] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none">
+                    <input type="time" v-model="sEndTimeOnly" class="flex-[1] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none">
+                </div>
+                <button @click="saveManualSleep" class="w-full bg-purple-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-purple-500/20 active:scale-95 transition">記錄睡眠</button>
+            </div>
+
+            <div class="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-2xl border border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="font-bold">📝 其他記錄</span>
                 </div>
                 <div class="flex gap-2 mb-4">
                     <input type="date" v-model="oDateOnly" class="flex-[2] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none">
                     <input type="time" v-model="oTimeOnly" class="flex-[1] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none">
                 </div>
-                <input type="text" v-model="oNote" placeholder="輸入備註事項..." class="w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm font-medium shadow-sm border border-gray-100 dark:border-gray-700 outline-none mb-4">
-                <button @click="saveOther" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition">記錄其他</button>
+                <div class="mb-4">
+                    <input type="text" v-model="oNote" placeholder="輸入內容 (例如: 洗澡、體溫、餵藥...)" class="w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl p-3 text-sm shadow-sm border border-gray-100 dark:border-gray-700 outline-none">
+                </div>
+                <button @click="saveOther" class="w-full bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition">記錄其他</button>
             </div>
 
         </div>
@@ -195,6 +214,8 @@
 
                 const fDateOnly = ref(getNowStrings().date), fTimeOnly = ref(getNowStrings().time);
                 const dDateOnly = ref(getNowStrings().date), dTimeOnly = ref(getNowStrings().time);
+                const sStartDateOnly = ref(getNowStrings().date), sStartTimeOnly = ref(getNowStrings().time);
+                const sEndDateOnly = ref(getNowStrings().date), sEndTimeOnly = ref(getNowStrings().time);
                 const oDateOnly = ref(getNowStrings().date), oTimeOnly = ref(getNowStrings().time);
 
                 onMounted(() => {
@@ -219,7 +240,9 @@
 
                 return {
                     isDark, feeds, diapers, sleeps, others, isSleeping, now, currentDate, fType, fAmount, dType, dLevel, oNote,
-                    fDateOnly, fTimeOnly, dDateOnly, dTimeOnly, oDateOnly, oTimeOnly,
+                    fDateOnly, fTimeOnly, dDateOnly, dTimeOnly,
+                    sStartDateOnly, sStartTimeOnly, sEndDateOnly, sEndTimeOnly,
+                    oDateOnly, oTimeOnly,
                     isToday: computed(() => currentDate.value.toDateString() === new Date().toDateString()),
                     viewDateDisplay: computed(() => currentDate.value.toLocaleDateString('zh-HK', {month: 'short', day: 'numeric', weekday: 'short'})),
                     activeSleepStart: computed(() => sleeps.value.find(s => !s.end)?.start),
@@ -229,6 +252,13 @@
                         return feeds.value.filter(f => f.time?.toDate?.().toDateString() === yesterday.toDateString()).reduce((sum, f) => sum + f.amount, 0);
                     }),
                     todaySleepMinutes: computed(() => sleeps.value.filter(s => s.start?.toDate?.().toDateString() === new Date().toDateString() && s.end).reduce((sum, s) => sum + getDiffMinutes(s.start, s.end), 0)),
+                    manualDurationDisplay: computed(() => {
+                        const start = new Date(`${sStartDateOnly.value}T${sStartTimeOnly.value}`);
+                        const end = new Date(`${sEndDateOnly.value}T${sEndTimeOnly.value}`);
+                        let diff = Math.floor((end - start) / 60000);
+                        if (isNaN(diff) || diff < 0) return '0h 0m';
+                        return `${Math.floor(diff/60)}h ${diff%60}m`;
+                    }),
                     filteredLogs: computed(() => {
                         const ds = currentDate.value.toDateString();
                         return [...feeds.value, ...diapers.value, ...sleeps.value, ...others.value].filter(i => {
@@ -245,11 +275,23 @@
                         await addDoc(collection(db, "diapers"), { time: combineToTS(dDateOnly.value, dTimeOnly.value), type: dType.value, level: dLevel.value }); 
                         dTimeOnly.value = new Date().toTimeString().slice(0, 5); 
                     },
-                    saveOther: async () => { 
+                    saveManualSleep: async () => {
+                        await addDoc(collection(db, "sleeps"), {
+                            start: combineToTS(sStartDateOnly.value, sStartTimeOnly.value),
+                            end: combineToTS(sEndDateOnly.value, sEndTimeOnly.value)
+                        });
+                        const nowSt = getNowStrings();
+                        sStartDateOnly.value = nowSt.date; sStartTimeOnly.value = nowSt.time;
+                        sEndDateOnly.value = nowSt.date; sEndTimeOnly.value = nowSt.time;
+                    },
+                    saveOther: async () => {
                         if (!oNote.value.trim()) return;
-                        await addDoc(collection(db, "others"), { time: combineToTS(oDateOnly.value, oTimeOnly.value), note: oNote.value }); 
+                        await addDoc(collection(db, "others"), {
+                            time: combineToTS(oDateOnly.value, oTimeOnly.value),
+                            note: oNote.value
+                        });
                         oNote.value = '';
-                        oTimeOnly.value = new Date().toTimeString().slice(0, 5); 
+                        oTimeOnly.value = new Date().toTimeString().slice(0, 5);
                     },
                     startSleep: async () => { await addDoc(collection(db, "sleeps"), { start: new Date(), end: null }); },
                     endSleep: async () => { if (sleepDocId.value) await updateDoc(doc(db, "sleeps", sleepDocId.value), { end: new Date() }); },
